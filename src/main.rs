@@ -30,8 +30,8 @@ fn create_todo() -> Option<Todo> {
 
         match title.parse::<usize>() {
             Ok(index) if index == 0 => return None,
-            Ok(_) => {},
-            Err(_) => {},
+            Ok(_) => {}
+            Err(_) => {}
         }
 
         if !title.is_empty() {
@@ -125,17 +125,13 @@ fn mark_todo_complete(todos: &mut Vec<Todo>) {
             .expect("Failed to read line");
 
         match choice.trim().parse::<usize>() {
+            Ok(0) => return,
+            Ok(index) if index > todos.len() => {
+                println!("Invalid index, please try again");
+                choice.clear();
+                continue;
+            }
             Ok(index) => {
-                if index > todos.len() {
-                    println!("Invalid index, please try again");
-                    choice.clear();
-                    continue;
-                }
-
-                if index == 0 {
-                    return;
-                }
-
                 if todos[index - 1].completed {
                     println!("This is already marked as completed");
                     choice.clear();
@@ -177,17 +173,13 @@ fn mark_todo_incomplete(todos: &mut Vec<Todo>) {
             .expect("Failed to read line");
 
         match choice.trim().parse::<usize>() {
+            Ok(0) => return,
+            Ok(index) if index > todos.len() => {
+                println!("Invalid index, please try again");
+                choice.clear();
+                continue;
+            }
             Ok(index) => {
-                if index > todos.len() {
-                    println!("Invalid index, please try again");
-                    choice.clear();
-                    continue;
-                }
-
-                if index == 0 {
-                    return;
-                }
-
                 if !todos[index - 1].completed {
                     println!("This is already marked as incompleted");
                     choice.clear();
@@ -229,17 +221,13 @@ fn edit_todo(todos: &mut Vec<Todo>) {
             .expect("Failed to read line");
 
         match choice.trim().parse::<usize>() {
+            Ok(0) => return,
+            Ok(index) if index > todos.len() => {
+                println!("Invalid index, please try again");
+                choice.clear();
+                continue;
+            }
             Ok(index) => {
-                if index > todos.len() {
-                    println!("Invalid index, please try again");
-                    choice.clear();
-                    continue;
-                }
-
-                if index == 0 {
-                    return;
-                }
-
                 match create_todo() {
                     Some(todo) => {
                         todos[index - 1].title = todo.title;
@@ -281,17 +269,13 @@ fn delete_todo(todos: &mut Vec<Todo>) {
             .expect("Failed to read line");
 
         match choice.trim().parse::<usize>() {
+            Ok(0) => return,
+            Ok(index) if index > todos.len() => {
+                println!("Invalid index, please try again");
+                choice.clear();
+                continue;
+            }
             Ok(index) => {
-                if index == 0 {
-                    return;
-                }
-
-                if index > todos.len() {
-                    println!("Invalid index, please try again");
-                    choice.clear();
-                    continue;
-                }
-
                 println!("Are you sure you want to delete the following todo? (y/n)");
                 let todo = &todos[index - 1];
                 println!(
