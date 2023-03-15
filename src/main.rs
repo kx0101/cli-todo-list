@@ -30,7 +30,7 @@ fn create_todo() -> Option<Todo> {
 
         match title.parse::<usize>() {
             Ok(index) if index == 0 => return None,
-            Ok(_) => {}
+            Ok(_) => {},
             Err(_) => {}
         }
 
