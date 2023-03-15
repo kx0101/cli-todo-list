@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, process::exit};
 
 fn load_options() -> Vec<String> {
     let options = [
@@ -373,7 +373,10 @@ fn main() {
             4 => mark_todo_incomplete(&mut todos),
             5 => edit_todo(&mut todos),
             6 => delete_todo(&mut todos),
-            7 => println!("Goodbye!"),
+            7 => {
+                println!("Goodbye!");
+                exit(1)
+            }
             _ => println!("Invalid input, please try again"),
         }
     }
