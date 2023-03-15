@@ -1,17 +1,15 @@
-use std::{io, process::exit};
+use std::{fmt::Display, io};
 
-fn load_options() -> Vec<String> {
-    let options = [
-        "Add a new todo item",
-        "View all todo items",
-        "Mark a todo item as complete",
-        "Mark a todo item as incomplete",
-        "Edit a todo item",
-        "Delete a todo item",
-        "Quit",
+fn load_options() -> Vec<Choice> {
+    return vec![
+        Choice::AddTodo,
+        Choice::ViewTodos,
+        Choice::MarkTodoComplete,
+        Choice::MarkTodoIncomplete,
+        Choice::EditTodo,
+        Choice::DeleteTodo,
+        Choice::Quit,
     ];
-
-    return options.iter().map(|option| option.to_string()).collect();
 }
 
 fn create_todo() -> Option<Todo> {
@@ -30,7 +28,7 @@ fn create_todo() -> Option<Todo> {
 
         match title.parse::<usize>() {
             Ok(index) if index == 0 => return None,
-            Ok(_) => {},
+            Ok(_) => {}
             Err(_) => {}
         }
 
@@ -310,6 +308,30 @@ fn delete_todo(todos: &mut Vec<Todo>) {
     }
 }
 
+enum Choice {
+    AddTodo,
+    ViewTodos,
+    MarkTodoComplete,
+    MarkTodoIncomplete,
+    EditTodo,
+    DeleteTodo,
+    Quit,
+}
+
+impl Display for Choice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Choice::AddTodo => write!(f, "Add a new todo"),
+            Choice::ViewTodos => write!(f, "View all todos"),
+            Choice::MarkTodoComplete => write!(f, "Mark a todo as complete"),
+            Choice::MarkTodoIncomplete => write!(f, "Mark a todo as incomplete"),
+            Choice::EditTodo => write!(f, "Edit a todo"),
+            Choice::DeleteTodo => write!(f, "Delete a todo"),
+            Choice::Quit => write!(f, "Quit the program"),
+        }
+    }
+}
+
 struct Todo {
     title: String,
     description: String,
@@ -321,9 +343,8 @@ fn main() {
 
     let options = load_options();
     let mut todos: Vec<Todo> = Vec::new();
-    let mut choice: u8 = 0;
 
-    while choice != 9 {
+    loop {
         println!("\n");
         println!("What would you like to do?");
         println!("\n");
@@ -339,9 +360,15 @@ fn main() {
             .read_line(&mut input)
             .expect("Failed to read line");
 
-        choice = match input.trim().parse() {
-            Ok(num) => num,
-            Err(_) => {
+        let choice = match input.trim() {
+            "1" => Choice::AddTodo,
+            "2" => Choice::ViewTodos,
+            "3" => Choice::MarkTodoComplete,
+            "4" => Choice::MarkTodoIncomplete,
+            "5" => Choice::EditTodo,
+            "6" => Choice::DeleteTodo,
+            "7" => Choice::Quit,
+            _ => {
                 println!("Invalid input, please try again");
                 continue;
             }
@@ -351,17 +378,16 @@ fn main() {
         println!("\n");
 
         match choice {
-            1 => add_todo(&mut todos),
-            2 => view_todos(&todos),
-            3 => mark_todo_complete(&mut todos),
-            4 => mark_todo_incomplete(&mut todos),
-            5 => edit_todo(&mut todos),
-            6 => delete_todo(&mut todos),
-            7 => {
+            Choice::AddTodo => add_todo(&mut todos),
+            Choice::ViewTodos => view_todos(&todos),
+            Choice::MarkTodoComplete => mark_todo_complete(&mut todos),
+            Choice::MarkTodoIncomplete => mark_todo_incomplete(&mut todos),
+            Choice::EditTodo => edit_todo(&mut todos),
+            Choice::DeleteTodo => delete_todo(&mut todos),
+            Choice::Quit => {
                 println!("Goodbye!");
-                exit(1)
+                break;
             }
-            _ => println!("Invalid input, please try again"),
         }
     }
 }
