@@ -1,4 +1,9 @@
-use std::{fmt::Display, io};
+use std::{
+    fmt::Display,
+    fs::{File},
+    io::{self, Write},
+};
+use serde::{Serialize, Deserialize};
 
 fn load_options() -> Vec<Choice> {
     return vec![
@@ -8,6 +13,7 @@ fn load_options() -> Vec<Choice> {
         Choice::MarkTodoIncomplete,
         Choice::EditTodo,
         Choice::DeleteTodo,
+        Choice::WriteTodosInFile,
         Choice::Quit,
     ];
 }
@@ -60,6 +66,50 @@ fn prompt_index(prompt: &str, max_index: usize) -> Option<usize> {
     }
 }
 
+fn write_todos_to_file(todos: &Vec<Todo>) -> Result<(), String> {
+    println!("Enter 0 if you want to get back to the menu");
+    println!("\n");
+
+    let input = match prompt_string("Choose file format: (1) JSON, (2) Plain text", 1, 2) {
+        Some(input) => input,
+        None => return Err("Invalid input, please try again".to_string()),
+    };
+
+    match input.as_str() {
+        "1" => {
+            let mut file = match File::create("todos.json") {
+                Ok(file) => file,
+                Err(e) => return Err(format!("Failed to create file: {}", e)),
+            };
+
+            let json_todos = serde_json::to_string_pretty(&todos).unwrap();
+            file.write_all(json_todos.as_bytes()).unwrap();
+
+            return Ok(());
+        }
+        "2" => {
+            let mut file = match File::create("todos.txt") {
+                Ok(file) => file,
+                Err(e) => return Err(format!("Failed to create file: {}", e)),
+            };
+
+            for (i, todo) in todos.iter().enumerate() {
+                writeln!(
+                    file,
+                    "{}. {} - {} [{}]",
+                    i + 1,
+                    todo.title,
+                    todo.description,
+                    todo.completed
+                );
+            }
+            return Ok(());
+        }
+        _ => return Err("Invalid input".to_string()),
+    };
+    return Ok(());
+}
+
 fn create_todo() -> Result<Todo, String> {
     println!("Enter 0 if you want to get back to the menu");
     println!("\n");
@@ -82,7 +132,7 @@ fn create_todo() -> Result<Todo, String> {
 fn add_todo(todos: &mut Vec<Todo>) {
     match create_todo() {
         Ok(todo) => todos.push(todo),
-        Err(error) => println!("Cancelled creating new todo, {}", error),
+        Err(error) => eprintln!("Cancelled creating new todo, {}", error),
     }
 }
 
@@ -234,6 +284,11 @@ fn delete_todo(todos: &mut Vec<Todo>) {
     }
 }
 
+enum FileFormat {
+    Text,
+    JSON,
+}
+
 enum Choice {
     AddTodo,
     ViewTodos,
@@ -241,6 +296,7 @@ enum Choice {
     MarkTodoIncomplete,
     EditTodo,
     DeleteTodo,
+    WriteTodosInFile,
     Quit,
 }
 
@@ -253,11 +309,13 @@ impl Display for Choice {
             Choice::MarkTodoIncomplete => write!(f, "Mark a todo as incomplete"),
             Choice::EditTodo => write!(f, "Edit a todo"),
             Choice::DeleteTodo => write!(f, "Delete a todo"),
+            Choice::WriteTodosInFile => write!(f, "Write todos in a file"),
             Choice::Quit => write!(f, "Quit the program"),
         }
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 struct Todo {
     title: String,
     description: String,
@@ -293,7 +351,8 @@ fn main() {
             "4" => Choice::MarkTodoIncomplete,
             "5" => Choice::EditTodo,
             "6" => Choice::DeleteTodo,
-            "7" => Choice::Quit,
+            "7" => Choice::WriteTodosInFile,
+            "8" => Choice::Quit,
             _ => {
                 println!("Invalid input, please try again");
                 continue;
@@ -310,6 +369,10 @@ fn main() {
             Choice::MarkTodoIncomplete => mark_todo_incomplete(&mut todos),
             Choice::EditTodo => edit_todo(&mut todos),
             Choice::DeleteTodo => delete_todo(&mut todos),
+            Choice::WriteTodosInFile => match write_todos_to_file(&todos) {
+                Ok(_) => println!("Succesffully wrote todos to file"),
+                Err(e) => eprintln!("Error writing todos to file: {}", e),
+            },
             Choice::Quit => {
                 println!("Goodbye!");
                 break;
