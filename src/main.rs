@@ -26,24 +26,24 @@ fn create_todo() -> Option<Todo> {
 
         title = title.trim().to_string();
 
-        match title.parse::<usize>() {
-            Ok(index) if index == 0 => return None,
-            Ok(_) => {}
-            Err(_) => {}
+        if let Ok(index) = title.parse::<usize>() {
+            if index == 0 {
+                return None;
+            }
         }
 
         if !title.is_empty() {
-            if title.len() > 50 {
-                println!("Title must be 50 characters or less.");
-                title.clear();
-                continue;
-            }
-
-            break;
-        } else {
             println!("Title cannot be empty.");
             continue;
         }
+
+        if title.len() > 50 {
+            println!("Title must be 50 characters or less.");
+            title.clear();
+            continue;
+        }
+
+        break;
     }
 
     let mut description = String::new();
@@ -58,17 +58,17 @@ fn create_todo() -> Option<Todo> {
         description = description.trim().to_string();
 
         if !description.is_empty() {
-            if description.len() > 250 {
-                println!("Description must be 250 characters or less.");
-                description.clear();
-                continue;
-            }
-
-            break;
-        } else {
             println!("Description cannot be empty.");
             continue;
         }
+
+        if description.len() > 250 {
+            println!("Description must be 250 characters or less.");
+            description.clear();
+            continue;
+        }
+
+        break;
     }
 
     return Some(Todo {
@@ -89,16 +89,16 @@ fn view_todos(todos: &Vec<Todo>) {
     if todos.is_empty() {
         println!("No todos found.");
         return;
-    } else {
-        for (i, todo) in todos.iter().enumerate() {
-            println!(
-                "{}. {} - {} [{}]",
-                i + 1,
-                todo.title,
-                todo.description,
-                if todo.completed { "x" } else { " " }
-            );
-        }
+    }
+
+    for (i, todo) in todos.iter().enumerate() {
+        println!(
+            "{}. {} - {} [{}]",
+            i + 1,
+            todo.title,
+            todo.description,
+            if todo.completed { "x" } else { " " }
+        );
     }
 }
 
