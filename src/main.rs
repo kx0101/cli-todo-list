@@ -101,9 +101,8 @@ fn write_todos_to_file(todos: &Vec<Todo>) -> Result<(), String> {
                     todo.title,
                     todo.description,
                     if todo.completed { "x" } else { " " }
-                );
+                ).map_err(|e| e.to_string())?;
             }
-            return Ok(());
         }
         _ => return Err("Invalid input".to_string()),
     };
@@ -282,11 +281,6 @@ fn delete_todo(todos: &mut Vec<Todo>) {
             println!("Todo not deleted");
         }
     }
-}
-
-enum FileFormat {
-    Text,
-    JSON,
 }
 
 enum Choice {
