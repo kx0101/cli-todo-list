@@ -12,66 +12,67 @@ fn load_options() -> Vec<Choice> {
     ];
 }
 
-fn create_todo() -> Option<Todo> {
-    let mut title = String::new();
+fn prompt_string(prompt: &str, min_len: usize, max_len: usize) -> Option<String> {
+    loop {
+        println!("{}", prompt);
 
+        let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read line");
+
+        let input = input.trim().to_string();
+
+        if input == "0" {
+            return None;
+        }
+
+        if input.is_empty() {
+            println!("Input cannot be empty.");
+            continue;
+        }
+
+        if input.len() < min_len {
+            println!("Input must be at least {} characters.", min_len);
+            continue;
+        }
+
+        if input.len() > max_len {
+            println!("Input must be at most {} characters.", max_len);
+            continue;
+        }
+
+        return Some(input);
+    }
+}
+
+fn prompt_index(prompt: &str, max_index: usize) -> Option<usize> {
+    loop {
+        let input = match prompt_string(prompt, 1, 2) {
+            Some(input) => input,
+            None => return None,
+        };
+
+        match input.parse::<usize>() {
+            Ok(index) if index <= max_index => return Some(index),
+            _ => println!("Invalid input, please try again"),
+        }
+    }
+}
+
+fn create_todo() -> Result<Todo, String> {
     println!("Enter 0 if you want to get back to the menu");
     println!("\n");
 
-    loop {
-        println!("Enter the title");
-        io::stdin()
-            .read_line(&mut title)
-            .expect("Failed to read line");
+    let title = match prompt_string("Enter the title", 1, 50) {
+        Some(input) => input,
+        None => return Err("Cancelled".to_string()),
+    };
 
-        title = title.trim().to_string();
+    let description =
+        prompt_string("Enter the description", 0, 250).unwrap_or_else(|| "".to_string());
 
-        if let Ok(index) = title.parse::<usize>() {
-            if index == 0 {
-                return None;
-            }
-        }
-
-        if !title.is_empty() {
-            println!("Title cannot be empty.");
-            continue;
-        }
-
-        if title.len() > 50 {
-            println!("Title must be 50 characters or less.");
-            title.clear();
-            continue;
-        }
-
-        break;
-    }
-
-    let mut description = String::new();
-
-    loop {
-        println!("Enter the description");
-
-        io::stdin()
-            .read_line(&mut description)
-            .expect("Failed to read line");
-
-        description = description.trim().to_string();
-
-        if !description.is_empty() {
-            println!("Description cannot be empty.");
-            continue;
-        }
-
-        if description.len() > 250 {
-            println!("Description must be 250 characters or less.");
-            description.clear();
-            continue;
-        }
-
-        break;
-    }
-
-    return Some(Todo {
+    return Ok(Todo {
         title,
         description,
         completed: false,
@@ -80,8 +81,8 @@ fn create_todo() -> Option<Todo> {
 
 fn add_todo(todos: &mut Vec<Todo>) {
     match create_todo() {
-        Some(todo) => todos.push(todo),
-        None => println!("Cancelled creating new todo"),
+        Ok(todo) => todos.push(todo),
+        Err(error) => println!("Cancelled creating new todo, {}", error),
     }
 }
 
@@ -102,100 +103,56 @@ fn view_todos(todos: &Vec<Todo>) {
     }
 }
 
-fn mark_todo_complete(todos: &mut Vec<Todo>) {
+fn mark_todo(todos: &mut Vec<Todo>, is_complete: bool, prompt: &str, success_message: &str) {
     if todos.is_empty() {
         println!("You have no todos saved");
         return;
     }
 
-    let mut choice = String::new();
-
     loop {
-        println!("Which one do you want to mark as complete");
-        println!("\n");
-        println!("Enter 0 if you want to get back to the menu");
-        println!("\n");
-
         view_todos(todos);
 
-        io::stdin()
-            .read_line(&mut choice)
-            .expect("Failed to read line");
+        let index = match prompt_index(prompt, todos.len()) {
+            Some(index) => index,
+            None => return,
+        };
 
-        match choice.trim().parse::<usize>() {
-            Ok(0) => return,
-            Ok(index) if index > todos.len() => {
-                println!("Invalid index, please try again");
-                choice.clear();
-                continue;
-            }
-            Ok(index) => {
-                if todos[index - 1].completed {
-                    println!("This is already marked as completed");
-                    choice.clear();
-                    continue;
+        if todos[index - 1].completed == is_complete {
+            println!(
+                "This todo is already marked as {}",
+                if is_complete {
+                    "completed"
+                } else {
+                    "incompleted"
                 }
-
-                todos[index - 1].completed = true;
-
-                println!("\n");
-                println!("Todo marked as done");
-                break;
-            }
-            Err(_) => {
-                println!("Invalid input, please try again");
-                continue;
-            }
+            );
+            continue;
         }
+
+        todos[index - 1].completed = is_complete;
+
+        println!();
+        println!("{}", success_message);
+        return;
     }
 }
 
+fn mark_todo_complete(todos: &mut Vec<Todo>) {
+    mark_todo(
+        todos,
+        true,
+        "Which one do you want to mark as completed? Enter 0 if you want to get back to the menu",
+        "Todo marked as done",
+    );
+}
+
 fn mark_todo_incomplete(todos: &mut Vec<Todo>) {
-    if todos.is_empty() {
-        println!("You have no todos saved");
-        return;
-    }
-
-    let mut choice = String::new();
-
-    loop {
-        println!("Which one do you want to mark as incomplete");
-        println!("\n");
-        println!("Enter 0 if you want to get back to the menu");
-        println!("\n");
-
-        view_todos(todos);
-
-        io::stdin()
-            .read_line(&mut choice)
-            .expect("Failed to read line");
-
-        match choice.trim().parse::<usize>() {
-            Ok(0) => return,
-            Ok(index) if index > todos.len() => {
-                println!("Invalid index, please try again");
-                choice.clear();
-                continue;
-            }
-            Ok(index) => {
-                if !todos[index - 1].completed {
-                    println!("This is already marked as incompleted");
-                    choice.clear();
-                    continue;
-                }
-
-                todos[index - 1].completed = false;
-
-                println!("\n");
-                println!("Todo marked as incomplete");
-                break;
-            }
-            Err(_) => {
-                println!("Invalid input, please try again");
-                continue;
-            }
-        }
-    }
+    mark_todo(
+        todos,
+        false,
+        "Which one do you want to mark as completed? Enter 0 if you want to get back to the menu",
+        "Todo marked as incomplete",
+    );
 }
 
 fn edit_todo(todos: &mut Vec<Todo>) {
@@ -204,44 +161,35 @@ fn edit_todo(todos: &mut Vec<Todo>) {
         return;
     }
 
-    let mut choice = String::new();
-
     loop {
-        println!("Which one do you want to edit");
-        println!("\n");
-        println!("Enter 0 if you want to get back to the menu");
-        println!("\n");
-
         view_todos(todos);
 
-        io::stdin()
-            .read_line(&mut choice)
-            .expect("Failed to read line");
+        let index = match prompt_index(
+            "Which one do you want to edit, Enter 0 if you want to get back to the menu",
+            todos.len(),
+        ) {
+            Some(index) => index,
+            None => return,
+        };
 
-        match choice.trim().parse::<usize>() {
-            Ok(0) => return,
-            Ok(index) if index > todos.len() => {
-                println!("Invalid index, please try again");
-                choice.clear();
-                continue;
-            }
-            Ok(index) => {
-                match create_todo() {
-                    Some(todo) => {
-                        todos[index - 1].title = todo.title;
-                        todos[index - 1].description = todo.description;
+        match index {
+            0 => return,
+            index => match create_todo() {
+                Ok(todo) => {
+                    todos[index - 1].title = todo.title;
+                    todos[index - 1].description = todo.description;
+                    println!("\n");
+                    println!("Todo is edited!");
+                    return;
+                }
+                Err(e) => {
+                    if e == "Cancelled" {
+                        return;
+                    } else {
+                        println!("Failed to create todo: {}", e);
                     }
-                    None => println!("Failed"),
-                };
-
-                println!("\n");
-                println!("Todo is edited!");
-                break;
-            }
-            Err(_) => {
-                println!("Invalid input, please try again");
-                continue;
-            }
+                }
+            },
         }
     }
 }
@@ -252,58 +200,36 @@ fn delete_todo(todos: &mut Vec<Todo>) {
         return;
     }
 
-    let mut choice = String::new();
-
     loop {
-        println!("Which one do you want to delete");
-        println!("\n");
-        println!("Enter 0 if you want to get back to the menu");
-        println!("\n");
-
         view_todos(todos);
 
-        io::stdin()
-            .read_line(&mut choice)
-            .expect("Failed to read line");
+        let index = match prompt_index(
+            "Which one do you want to edit, Enter 0 if you want to get back to the menu",
+            todos.len(),
+        ) {
+            Some(index) => index,
+            None => return,
+        };
 
-        match choice.trim().parse::<usize>() {
-            Ok(0) => return,
-            Ok(index) if index > todos.len() => {
-                println!("Invalid index, please try again");
-                choice.clear();
-                continue;
-            }
-            Ok(index) => {
-                println!("Are you sure you want to delete the following todo? (y/n)");
-                let todo = &todos[index - 1];
-                println!(
-                    "{}. {} - {} [{}]",
-                    index,
-                    todo.title,
-                    todo.description,
-                    if todo.completed { "x" } else { " " }
-                );
+        let confirm = prompt_string("Are you sure you want to delete this todo? (y/n)", 1, 1)
+            .unwrap_or_else(|| "".to_string());
 
-                let mut confirm = String::new();
-                io::stdin()
-                    .read_line(&mut confirm)
-                    .expect("Failed to read line");
+        let todo = &todos[index - 1];
+        println!(
+            "{}. {} - {} [{}]",
+            index,
+            todo.title,
+            todo.description,
+            if todo.completed { "x" } else { " " }
+        );
 
-                if confirm.trim().to_lowercase() != "y" {
-                    println!("Todo not deleted");
-                    return;
-                }
-
-                todos.remove(index - 1);
-
-                println!("\n");
-                println!("Todo deleted successfully!");
-                break;
-            }
-            Err(_) => {
-                println!("Invalid input, please try again");
-                continue;
-            }
+        if confirm == "y" {
+            todos.remove(index - 1);
+            println!();
+            println!("Todo deleted successfully");
+            break;
+        } else {
+            println!("Todo not deleted");
         }
     }
 }
