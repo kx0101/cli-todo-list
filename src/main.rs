@@ -1,9 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
-    fs::{File},
+    fs::File,
     io::{self, Write},
 };
-use serde::{Serialize, Deserialize};
 
 fn load_options() -> Vec<Choice> {
     return vec![
@@ -100,7 +100,7 @@ fn write_todos_to_file(todos: &Vec<Todo>) -> Result<(), String> {
                     i + 1,
                     todo.title,
                     todo.description,
-                    todo.completed
+                    if todo.completed { "x" } else { " " }
                 );
             }
             return Ok(());
